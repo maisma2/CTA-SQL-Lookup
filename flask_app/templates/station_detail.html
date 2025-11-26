@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>{{ station.name }}</h2>
+
+<div class="station-card">
+    <h4>Lines Serving This Station</h4>
+    <ul>
+        {% for line in lines %}
+            <li>{{ line.name }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="station-card">
+    <h4>Recent Ridership (Last 30 Days)</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Riders</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in ridership %}
+            <tr>
+                <td>{{ r.date }}</td>
+                <td>{{ r.total_riders }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

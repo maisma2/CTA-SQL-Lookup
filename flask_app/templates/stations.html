@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2 class="mb-4">All CTA Stations</h2>
+
+<div class="list-group">
+    {% for s in stations %}
+        <a href="/station/{{ s.station_id }}" class="list-group-item list-group-item-action">
+            {{ s.name }}
+        </a>
+    {% endfor %}
+</div>
+
+{% endblock %}
