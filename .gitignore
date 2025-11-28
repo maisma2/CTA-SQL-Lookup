@@ -1,0 +1,7 @@
+.env
+data/raw/
+*.zip
+*.txt
+*.csv
+# BUT allow cleaned CSVs
+!data/cleaned/*.csv
