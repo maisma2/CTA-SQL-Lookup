@@ -5,7 +5,8 @@ DROP TABLE IF EXISTS Line;
 
 
 CREATE TABLE Line (
-    line_id INT AUTO_INCREMENT PRIMARY KEY,
+    -- Changed AUTO_INCREMENT to IDENTITY(1,1) for Azure SQL
+    line_id INT PRIMARY KEY IDENTITY(1,1),
     name VARCHAR(50),
     color VARCHAR(30)
 );
@@ -15,7 +16,8 @@ CREATE TABLE Station (
     station_id INT PRIMARY KEY,
     name VARCHAR(100),
     latitude DECIMAL(9,6),
-    longitude DECIMAL(9,6)
+    longitude DECIMAL(9,6),
+    wheelchair INT
 );
 
 
@@ -33,4 +35,17 @@ CREATE TABLE Ridership (
     day_type CHAR(1),
     total_riders INT,
     FOREIGN KEY (station_id) REFERENCES Station(station_id)
+);
+
+-- Table Station needs WHeelchair column
+ALTER TABLE Station
+ADD wheelchair TINYINT NULL;
+
+-- Lines needs changes too
+DROP TABLE IF EXISTS Line;
+CREATE TABLE Line (
+    -- Change this to match your CSV data and use it as PK
+    code VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(50),
+    color VARCHAR(30)
 );
