@@ -8,6 +8,10 @@ DB_USER = 'admin1@db-abeer'
 DB_PASSWORD = 'F68e.NH97NbF.q='
 DB_NAME = 'cs-480-final'
 
+#For WSL/Linux
+#https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver17&tabs=ubuntu18-install%2Calpine17-install%2Cdebian8-install%2Credhat7-13-install%2Crhel7-offline
+#For Windows
+#https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver17
 
 ODBC_DRIVER = '{ODBC Driver 18 for SQL Server}'
 
