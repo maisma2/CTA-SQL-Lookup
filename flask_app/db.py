@@ -1,13 +1,26 @@
-import os
-from dotenv import load_dotenv
-import mysql.connector
+# In db.py
 
-load_dotenv()  
+import pyodbc
+
+#TODO: REMOVE THIS BEFORE GOING PUBLIC REPO ACCESS
+DB_HOST = 'db-abeer.database.windows.net'
+DB_USER = 'admin1@db-abeer'
+DB_PASSWORD = 'F68e.NH97NbF.q='
+DB_NAME = 'cs-480-final'
+
+
+ODBC_DRIVER = '{ODBC Driver 18 for SQL Server}'
+
 
 def get_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )
+    # ... rest of the function remains the same ...
+    connection_string = f'DRIVER={ODBC_DRIVER};SERVER={DB_HOST};DATABASE={DB_NAME};UID={DB_USER};PWD={DB_PASSWORD};Encrypt=yes;TrustServerCertificate=no;LoginTimeout=30;'
+
+    #Remove this after checking connection
+    try:
+        conn = pyodbc.connect(connection_string)
+        print("Database connection successful!")
+        return conn
+    except pyodbc.Error as ex:
+        print(f"Database connection failed: {ex}")
+        return None
