@@ -18,7 +18,7 @@ def stations():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT station_id, stop_name
+        SELECT station_id, stop_name AS name
         FROM dbo.Station
         ORDER BY stop_name;
     """)
@@ -33,12 +33,6 @@ def stations():
 
 @app.route("/station/<int:station_id>")
 def station_detail(station_id: int):
-    """
-    Show details for a single station:
-      - base station info
-      - which lines serve it
-      - recent ridership
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -46,29 +40,28 @@ def station_detail(station_id: int):
     cursor.execute("""
         SELECT *
         FROM dbo.Station
-        WHERE station_id = %s;
+        WHERE station_id = ?;
     """, (station_id,))
-    station = cursor.fetchone()  # dict or None
+    station = cursor.fetchone()
 
     # 2) Lines serving this station
     cursor.execute("""
-        SELECT l.*
-        FROM dbo.Line AS l
+        SELECT s.*
+        FROM dbo.Station AS s
         INNER JOIN dbo.StationLine AS sl
-            ON l.line_id = sl.line_id
-        WHERE sl.station_id = %s
-        ORDER BY l.name;
+            ON s.stop_id = sl.stop_id
+        WHERE sl.stop_id = ?
+        ORDER BY s.stop_name, s.station_id;
     """, (station_id,))
-    lines = cursor.fetchall()  # list of dicts
+    lines = cursor.fetchall()
 
     # 3) Recent ridership
-    # Adjust column names if your Ridership schema is different
     cursor.execute("""
         SELECT TOP 30
-            [date],
-            total_riders
-        FROM dbo.Ridership
-        WHERE station_id = %s
+            [date] AS date,
+            StationRidership.rides AS total_riders
+        FROM dbo.StationRidership
+        WHERE station_id = ?
         ORDER BY [date] DESC;
     """, (station_id,))
     ridership = cursor.fetchall()
@@ -82,6 +75,7 @@ def station_detail(station_id: int):
         lines=lines,
         ridership=ridership,
     )
+
 
 
 @app.route("/search")
