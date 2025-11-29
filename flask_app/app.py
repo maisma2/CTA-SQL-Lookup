@@ -96,16 +96,16 @@ def search():
 
     if query:
         cursor.execute("""
-            SELECT station_id, name
+            SELECT station_id, stop_name
             FROM dbo.Station
-            WHERE name LIKE %s
-            ORDER BY name;
+            WHERE stop_name LIKE %s
+            ORDER BY stop_name;
         """, (f"%{query}%",))
     else:
         cursor.execute("""
-            SELECT TOP 50 station_id, name
+            SELECT TOP 50 station_id, stop_name
             FROM dbo.Station
-            ORDER BY name;
+            ORDER BY stop_name;
         """)
 
     results = cursor.fetchall()
