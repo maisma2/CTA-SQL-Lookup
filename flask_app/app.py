@@ -12,10 +12,11 @@ def index():
 @app.route("/stations")
 def stations():
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    cursor.execute("SELECT station_id, name FROM Station ORDER BY name;")
-    stations = cursor.fetchall()
+    cursor.execute("SELECT station_id, station_name FROM dbo.StationName; ORDER BY name;")
+    stations = [{"station_id": row[0], "station_name": row[1]} for row in cursor.fetchall()]
+
 
     cursor.close()
     conn.close()
