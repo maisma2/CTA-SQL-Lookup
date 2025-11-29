@@ -1,0 +1,6 @@
+SELECT [station_id]
+      ,[station_name]
+      ,[date]
+      ,[day_type]
+      ,[rides]
+  FROM [dbo].[StationRidership]

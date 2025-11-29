@@ -1,0 +1,8 @@
+SELECT [stop_id]
+      ,[station_id]
+      ,[stop_name]
+      ,[direction]
+      ,[ada]
+      ,[latitude]
+      ,[longitude]
+  FROM [dbo].[Station]

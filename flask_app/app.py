@@ -11,12 +11,19 @@ def index():
 
 @app.route("/stations")
 def stations():
+    """
+    Show a list of all stations (id + name).
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT station_id, station_name FROM dbo.StationName; ORDER BY name;")
-    stations = [{"station_id": row[0], "station_name": row[1]} for row in cursor.fetchall()]
+    cursor.execute("""
+        SELECT station_id, stop_name
+        FROM dbo.Station
+        ORDER BY stop_name;
+    """)
 
+    stations = cursor.fetchall()  # list of dicts: {"station_id": ..., "name": ...}
 
     cursor.close()
     conn.close()
@@ -24,31 +31,45 @@ def stations():
     return render_template("stations.html", stations=stations)
 
 
-
 @app.route("/station/<int:station_id>")
-def station_detail(station_id):
+def station_detail(station_id: int):
+    """
+    Show details for a single station:
+      - base station info
+      - which lines serve it
+      - recent ridership
+    """
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM Station WHERE station_id = %s", (station_id,))
-    station = cursor.fetchone()
-
+    # 1) Base station info
     cursor.execute("""
-        SELECT l.name 
-        FROM Line l
-        JOIN StationLine sl ON l.line_id = sl.line_id
-        WHERE sl.station_id = %s
+        SELECT *
+        FROM dbo.Station
+        WHERE station_id = %s;
     """, (station_id,))
-    lines = cursor.fetchall()
+    station = cursor.fetchone()  # dict or None
 
+    # 2) Lines serving this station
     cursor.execute("""
-        SELECT 
-            STR_TO_DATE(date, '%m/%d/%Y') AS date,
+        SELECT l.*
+        FROM dbo.Line AS l
+        INNER JOIN dbo.StationLine AS sl
+            ON l.line_id = sl.line_id
+        WHERE sl.station_id = %s
+        ORDER BY l.name;
+    """, (station_id,))
+    lines = cursor.fetchall()  # list of dicts
+
+    # 3) Recent ridership
+    # Adjust column names if your Ridership schema is different
+    cursor.execute("""
+        SELECT TOP 30
+            [date],
             total_riders
-        FROM Ridership
+        FROM dbo.Ridership
         WHERE station_id = %s
-        ORDER BY STR_TO_DATE(date, '%m/%d/%Y') DESC
-        LIMIT 30
+        ORDER BY [date] DESC;
     """, (station_id,))
     ridership = cursor.fetchall()
 
@@ -59,23 +80,33 @@ def station_detail(station_id):
         "station_detail.html",
         station=station,
         lines=lines,
-        ridership=ridership
+        ridership=ridership,
     )
 
 
 @app.route("/search")
 def search():
-    query = request.args.get("q", "")
+    """
+    Search stations by name. Uses ?q= in the query string.
+    """
+    query = request.args.get("q", "").strip()
 
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT station_id, name 
-        FROM Station
-        WHERE name LIKE %s
-        ORDER BY name
-    """, (f"%{query}%",))
+    if query:
+        cursor.execute("""
+            SELECT station_id, stop_name
+            FROM dbo.Station
+            WHERE stop_name LIKE %s
+            ORDER BY stop_name;
+        """, (f"%{query}%",))
+    else:
+        cursor.execute("""
+            SELECT TOP 50 station_id, stop_name
+            FROM dbo.Station
+            ORDER BY stop_name;
+        """)
 
     results = cursor.fetchall()
 
@@ -83,7 +114,6 @@ def search():
     conn.close()
 
     return render_template("search_results.html", query=query, results=results)
-
 
 
 if __name__ == "__main__":
