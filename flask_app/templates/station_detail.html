@@ -1,13 +1,13 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2>{{ station.name }}</h2>
+<h2>{{ station.stop_name }}</h2>
 
 <div class="station-card">
     <h4>Lines Serving This Station</h4>
     <ul>
         {% for line in lines %}
-            <li>{{ line.name }}</li>
+            <li>{{ line.stop_name }}</li>
         {% endfor %}
     </ul>
 </div>
