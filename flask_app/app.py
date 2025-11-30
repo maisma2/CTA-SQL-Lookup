@@ -3,10 +3,54 @@ from db import get_connection
 
 app = Flask(__name__)
 
-
 @app.route("/")
 def index():
-    return render_template("index.html")
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 1) Weekday vs weekend ridership (overall)
+    cursor.execute("""
+        SELECT
+            day_type,
+            AVG(CAST(rides AS float)) AS avg_rides
+        FROM dbo.StationRidership
+        GROUP BY day_type;
+    """)
+    day_stats = cursor.fetchall()
+
+    # 2) Ridership by line color
+    # Use BIGINT for sums to avoid overflow
+    cursor.execute("""
+        WITH station_color AS (
+            SELECT
+                r.station_id,
+                sl.color,
+                SUM(CAST(r.rides AS bigint)) AS total_rides_station_color
+            FROM dbo.StationRidership r
+            JOIN dbo.Station s
+                ON r.station_id = s.station_id
+            JOIN dbo.StationLine sl
+                ON sl.stop_id = s.stop_id
+            GROUP BY r.station_id, sl.color
+        )
+        SELECT
+            color,
+            SUM(CAST(total_rides_station_color AS bigint)) AS total_rides
+        FROM station_color
+        WHERE color IS NOT NULL
+        GROUP BY color
+        ORDER BY total_rides DESC;
+    """)
+    line_stats = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "index.html",
+        day_stats=day_stats,
+        line_stats=line_stats
+    )
 
 
 @app.route("/stations")
@@ -76,7 +120,6 @@ def station_detail(station_id: int):
     cursor = conn.cursor()
 
     # 1) Base station info from StationName
-    # station_name -> name (for template: station.name)
     cursor.execute("""
         SELECT
             station_id,
@@ -106,9 +149,23 @@ def station_detail(station_id: int):
     """, (station_id,))
     stops = cursor.fetchall()  # list[dict]
 
-    # 3) Lines serving this station (from StationLine using stop_id + color)
-    # We join StationLine -> Station by stop_id,
-    # and alias color as "name" so the template can use line.name
+    # Use first stop's coordinates as station coordinates
+    station_lat = None
+    station_lng = None
+    bbox_min_lat = bbox_min_lng = bbox_max_lat = bbox_max_lng = None
+
+    if stops:
+        # cast from Decimal to float so we can do arithmetic
+        station_lat = float(stops[0]["latitude"])
+        station_lng = float(stops[0]["longitude"])
+
+        delta = 0.005
+        bbox_min_lng = station_lng - delta
+        bbox_min_lat = station_lat - delta
+        bbox_max_lng = station_lng + delta
+        bbox_max_lat = station_lat + delta
+
+    # 3) Lines serving this station
     cursor.execute("""
         SELECT DISTINCT
             sl.color AS name
@@ -120,8 +177,7 @@ def station_detail(station_id: int):
     """, (station_id,))
     lines = cursor.fetchall()
 
-    # 4) Recent ridership (last 30 rows) from StationRidership
-    # rides -> total_riders (for template: r.total_riders)
+    # 4) Recent ridership
     cursor.execute("""
         SELECT TOP 30
             [date]  AS date,
@@ -141,6 +197,12 @@ def station_detail(station_id: int):
         stops=stops,
         lines=lines,
         ridership=ridership,
+        station_lat=station_lat,
+        station_lng=station_lng,
+        bbox_min_lat=bbox_min_lat,
+        bbox_min_lng=bbox_min_lng,
+        bbox_max_lat=bbox_max_lat,
+        bbox_max_lng=bbox_max_lng,
     )
 
 
@@ -225,7 +287,6 @@ def top_stations():
     conn.close()
 
     return render_template("top_stations.html", stations=stations)
-
 
 if __name__ == "__main__":
     app.run(debug=True)
