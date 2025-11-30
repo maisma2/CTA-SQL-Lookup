@@ -40,7 +40,7 @@ def station_detail(station_id: int):
     cursor.execute("""
         SELECT *
         FROM dbo.Station
-        WHERE station_id = ?;
+        WHERE station_id = %s;
     """, (station_id,))
     station = cursor.fetchone()
 
@@ -50,7 +50,7 @@ def station_detail(station_id: int):
         FROM dbo.Station AS s
         INNER JOIN dbo.StationLine AS sl
             ON s.stop_id = sl.stop_id
-        WHERE sl.stop_id = ?
+        WHERE sl.stop_id = %s
         ORDER BY s.stop_name, s.station_id;
     """, (station_id,))
     lines = cursor.fetchall()
@@ -61,7 +61,7 @@ def station_detail(station_id: int):
             [date] AS date,
             StationRidership.rides AS total_riders
         FROM dbo.StationRidership
-        WHERE station_id = ?
+        WHERE station_id = %s
         ORDER BY [date] DESC;
     """, (station_id,))
     ridership = cursor.fetchall()
