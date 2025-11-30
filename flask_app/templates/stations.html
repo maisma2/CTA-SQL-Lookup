@@ -1,14 +1,60 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2 class="mb-4">All CTA Stations</h2>
+<h2 class="mb-4">Browse Stations</h2>
 
-<div class="list-group">
-    {% for s in stations %}
-        <a href="/station/{{ s.station_id }}" class="list-group-item list-group-item-action">
-            {{ s.name }}
-        </a>
-    {% endfor %}
+<div class="station-card mb-3">
+    <form method="get" action="{{ url_for('stations') }}" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="color" class="form-label">Filter by Line Color</label>
+            <select id="color" name="color" class="form-select">
+                <option value="">All colors</option>
+                {% for c in colors %}
+                    <option value="{{ c }}" {% if selected_color == c %}selected{% endif %}>
+                        {{ c }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <div class="form-check mt-4">
+                <input class="form-check-input" type="checkbox" id="ada_only" name="ada_only" value="1"
+                       {% if ada_only %}checked{% endif %}>
+                <label class="form-check-label" for="ada_only">
+                    ADA accessible only
+                </label>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary mt-4">Apply Filters</button>
+            <a href="{{ url_for('stations') }}" class="btn btn-secondary mt-4 ms-2">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="station-card">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Station</th>
+                <th>ADA Accessible?</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in stations %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('station_detail', station_id=s.station_id) }}">
+                        {{ s.station_name }}
+                    </a>
+                </td>
+                <td>{{ 'Yes' if s.has_ada == 1 else 'No' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock %}

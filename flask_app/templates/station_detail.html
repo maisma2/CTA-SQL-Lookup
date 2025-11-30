@@ -1,35 +1,165 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2>{{ station.name }}</h2>
+<h2 class="mb-4">{{ station.name }}</h2>
 
 <div class="station-card">
-    <h4>Lines Serving This Station</h4>
-    <ul>
-        {% for line in lines %}
-            <li>{{ line.name }}</li>
-        {% endfor %}
-    </ul>
+    <h4>Station Importance</h4>
+    <p>
+        <strong>Importance score:</strong> {{ "%.2f"|format(importance_score) }}
+    </p>
+    <p class="text-muted mb-0">
+        Based on total ridership ({{ "{:,}".format(total_rides) }}) and
+        {{ num_lines }} line{{ '' if num_lines == 1 else 's' }} serving this station.
+    </p>
 </div>
 
 <div class="station-card">
-    <h4>Recent Ridership (Last 30 Days)</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Riders</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in ridership %}
-            <tr>
-                <td>{{ r.date }}</td>
-                <td>{{ r.total_riders }}</td>
-            </tr>
+    <h4>Contribution to Each Line</h4>
+
+    {% if line_contributions %}
+        <p class="text-muted">
+            How much this station contributes to total ridership on each line it serves.
+        </p>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Line</th>
+                    <th>Station Rides (All Time)</th>
+                    <th>Total Line Rides</th>
+                    <th>Contribution</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in line_contributions %}
+                <tr>
+                    <td>{{ c.color }}</td>
+                    <td>{{ "{:,}".format(total_rides) }}</td>
+                    <td>{{ "{:,}".format(c.line_total_rides) }}</td>
+                    <td>
+                        {% if c.percent is not none %}
+                            {{ "%.2f"|format(c.percent) }}%
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-muted mb-0">
+            Not enough data to compute line contributions for this station.
+        </p>
+    {% endif %}
+</div>
+
+<!-- Lines (colors) serving this station -->
+<div class="station-card">
+    <h4>Lines Serving This Station</h4>
+    {% if lines %}
+        <ul>
+            {% for line in lines %}
+                <li>{{ line.name }}</li>
             {% endfor %}
-        </tbody>
-    </table>
+        </ul>
+    {% else %}
+        <p>No line information available for this station.</p>
+    {% endif %}
+</div>
+
+<!-- Stops at this station -->
+<div class="station-card">
+    <h4>Stops at This Station</h4>
+    {% if stops %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Stop Name</th>
+                    <th>Direction</th>
+                    <th>ADA Accessible</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in stops %}
+                <tr>
+                    <td>{{ s.stop_name }}</td>
+                    <td>{{ s.direction }}</td>
+                    <td>{{ 'Yes' if s.ada == 1 else 'No' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No stop information available for this station.</p>
+    {% endif %}
+</div>
+
+<!-- Recent ridership -->
+<div class="station-card">
+    <h4>Recent Ridership (Last 30 Days)</h4>
+    {% if ridership %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Riders</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in ridership %}
+                <tr>
+                    <td>
+                        {{ r.date.strftime('%Y-%m-%d') if r.date else r.date }}
+                    </td>
+                    <td>{{ r.total_riders }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No recent ridership data available.</p>
+    {% endif %}
+</div>
+
+<!-- Location: coordinates + OpenStreetMap -->
+<div class="station-card">
+    <h4>Location</h4>
+
+    {% if station_lat and station_lng %}
+        <p>
+            <strong>Latitude:</strong> {{ station_lat }}<br>
+            <strong>Longitude:</strong> {{ station_lng }}
+        </p>
+
+        <p>
+            <a class="btn btn-primary"
+               href="https://www.google.com/maps/search/?api=1&query={{ station_lat }},{{ station_lng }}"
+               target="_blank">
+                Open in Google Maps
+            </a>
+        </p>
+
+        <!-- OpenStreetMap embed (no API key required) -->
+        {% set lat = station_lat %}
+        {% set lng = station_lng %}
+        {% set delta = 0.005 %}
+
+        <div style="border-radius: 8px; overflow: hidden;">
+            <iframe
+                width="100%"
+                height="350"
+                frameborder="0"
+                scrolling="no"
+                marginheight="0"
+                marginwidth="0"
+                src="https://www.openstreetmap.org/export/embed.html?bbox={{ lng - delta }},{{ lat - delta }},{{ lng + delta }},{{ lat + delta }}&layer=mapnik&marker={{ lat }},{{ lng }}">
+            </iframe>
+        </div>
+
+    {% else %}
+        <p>No location data available for this station.</p>
+    {% endif %}
 </div>
 
 {% endblock %}

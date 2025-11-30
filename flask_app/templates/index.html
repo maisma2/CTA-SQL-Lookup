@@ -1,11 +1,69 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<div class="text-center">
-    <h1 class="mb-4">Chicago CTA Explorer</h1>
-    <p class="lead">Search and explore stations, lines, and ridership trends.</p>
+<!-- Top section: welcome / description -->
+<div class="station-card mb-4">
+    <h2>CTA Station Explorer</h2>
+    <p>
+        Explore CTA rail stations, see the lines and stops serving each station,
+        and view recent ridership trends. Use the navigation bar to browse stations,
+        search by name, or jump to the top stations by importance.
+    </p>
+</div>
 
-    <a href="/stations" class="btn btn-primary btn-lg mt-3">Browse Stations</a>
+<!-- Analytics section: lives in the "bottom half" of the main page -->
+<h3 class="mb-3">System-wide Analytics</h3>
+
+<!-- 1) Weekday vs Weekend Ridership -->
+<div class="station-card mb-4">
+    <h4>Average Ridership by Day Type</h4>
+    <p class="text-muted">
+        This shows the average rides per station-day, grouped by CTA day type.
+    </p>
+
+    {% set labels = {'W': 'Weekday', 'A': 'Saturday', 'U': 'Sunday/Holiday'} %}
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Day Type</th>
+                <th>Average Rides</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in day_stats %}
+            <tr>
+                <td>{{ labels[row.day_type] if row.day_type in labels else row.day_type }}</td>
+                <td>{{ "{:,.0f}".format(row.avg_rides) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 2) Ridership by Line Color -->
+<div class="station-card mb-4">
+    <h4>Total Ridership by Line Color</h4>
+    <p class="text-muted">
+        Total estimated ridership per line color, aggregated across all stations served by that line.
+    </p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Line Color</th>
+                <th>Total Rides</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in line_stats %}
+            <tr>
+                <td>{{ row.color }}</td>
+                <td>{{ "{:,}".format(row.total_rides) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock %}
