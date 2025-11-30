@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2 class="mb-4">Top 10 Stations by Importance</h2>
+
+<div class="station-card">
+    <p>
+        Importance score combines total ridership and number of lines serving the station:
+        <code>importance = log10(total_rides + 1) + num_lines</code>
+    </p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Station</th>
+                <th>Total Rides</th>
+                <th># Lines</th>
+                <th>Importance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in stations %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                    <a href="{{ url_for('station_detail', station_id=s.station_id) }}">
+                        {{ s.station_name }}
+                    </a>
+                </td>
+                <td>{{ "{:,}".format(s.total_rides) }}</td>
+                <td>{{ s.num_lines }}</td>
+                <td>{{ "%.2f"|format(s.importance_score) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -1,35 +1,74 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2>{{ station.name }}</h2>
+<h2 class="mb-4">{{ station.name }}</h2>
 
+<!-- Lines (colors) serving this station -->
 <div class="station-card">
     <h4>Lines Serving This Station</h4>
-    <ul>
-        {% for line in lines %}
-            <li>{{ line.name }}</li>
-        {% endfor %}
-    </ul>
+    {% if lines %}
+        <ul>
+            {% for line in lines %}
+                <li>{{ line.name }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No line information available for this station.</p>
+    {% endif %}
 </div>
 
+<!-- Stops at this station -->
+<div class="station-card">
+    <h4>Stops at This Station</h4>
+    {% if stops %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Stop Name</th>
+                    <th>Direction</th>
+                    <th>ADA Accessible</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in stops %}
+                <tr>
+                    <td>{{ s.stop_name }}</td>
+                    <td>{{ s.direction }}</td>
+                    <td>{{ 'Yes' if s.ada == 1 else 'No' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No stop information available for this station.</p>
+    {% endif %}
+</div>
+
+<!-- Recent ridership -->
 <div class="station-card">
     <h4>Recent Ridership (Last 30 Days)</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Riders</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in ridership %}
-            <tr>
-                <td>{{ r.date }}</td>
-                <td>{{ r.total_riders }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% if ridership %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Riders</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in ridership %}
+                <tr>
+                    <td>
+                        {{ r.date.strftime('%Y-%m-%d') if r.date else r.date }}
+                    </td>
+                    <td>{{ r.total_riders }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No recent ridership data available.</p>
+    {% endif %}
 </div>
 
 {% endblock %}
