@@ -8,6 +8,7 @@
     <p>
         <strong>Importance score:</strong> {{ "%.2f"|format(importance_score) }}
     </p>
+    
     <p class="text-muted mb-0">
         Based on total ridership ({{ "{:,}".format(total_rides) }}) and
         {{ num_lines }} line{{ '' if num_lines == 1 else 's' }} serving this station.
@@ -60,7 +61,9 @@
     {% if lines %}
         <ul>
             {% for line in lines %}
-                <li>{{ line.name }}</li>
+                <li>
+                    <span class="badge badge-line-{{ line.name }}">{{ line.name }}</span>
+                </li>
             {% endfor %}
         </ul>
     {% else %}

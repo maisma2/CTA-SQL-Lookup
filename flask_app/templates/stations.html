@@ -40,6 +40,9 @@
             <tr>
                 <th>Station</th>
                 <th>ADA Accessible?</th>
+                {% for c in colors %}
+                    <span class="badge badge-line-{{ c }}">{{ c }}</span>
+                {% endfor %}
             </tr>
         </thead>
         <tbody>

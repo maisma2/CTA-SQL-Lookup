@@ -256,8 +256,6 @@ def station_detail(station_id: int):
         line_contributions=line_contributions,
     )
 
-
-
 @app.route("/search")
 def search():
     """
@@ -339,6 +337,70 @@ def top_stations():
     conn.close()
 
     return render_template("top_stations.html", stations=stations)
+
+@app.route("/system_map")
+def system_map():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get all stops with station + coordinates + line color
+    cursor.execute("""
+        SELECT
+            s.station_id,
+            sn.station_name,
+            s.stop_id,
+            s.stop_name,
+            s.latitude,
+            s.longitude,
+            sl.color
+        FROM dbo.Station AS s
+        JOIN dbo.StationName AS sn
+            ON s.station_id = sn.station_id
+        LEFT JOIN dbo.StationLine AS sl
+            ON s.stop_id = sl.stop_id
+        ORDER BY sn.station_name;
+    """)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    # Aggregate by station: one marker per station, with all its colors & stops
+    stations_map = {}
+    for row in rows:
+        sid = row["station_id"]
+
+        if sid not in stations_map:
+            stations_map[sid] = {
+                "station_id": sid,
+                "station_name": row["station_name"],
+                "latitude": float(row["latitude"]) if row["latitude"] is not None else None,
+                "longitude": float(row["longitude"]) if row["longitude"] is not None else None,
+                "colors": set(),
+                "stops": set(),
+            }
+
+        if row["color"]:
+            stations_map[sid]["colors"].add(row["color"])
+        if row["stop_name"]:
+            stations_map[sid]["stops"].add(row["stop_name"])
+
+    # Convert sets to nice lists/strings for the template
+    station_list = []
+    for entry in stations_map.values():
+        colors = sorted(entry["colors"])
+        stops = sorted(entry["stops"])
+        station_list.append({
+            "station_id": entry["station_id"],
+            "station_name": entry["station_name"],
+            "latitude": entry["latitude"],
+            "longitude": entry["longitude"],
+            "colors": colors,
+            "primary_color": colors[0] if colors else None,
+            "stops_text": ", ".join(stops) if stops else ""
+        })
+
+    return render_template("system_map.html", stations=station_list)
 
 if __name__ == "__main__":
     app.run(debug=True)

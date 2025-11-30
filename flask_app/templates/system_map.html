@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2 class="mb-4">CTA System Map</h2>
+
+<!-- Leaflet CSS -->
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div id="map" style="width:100%; height:600px; border-radius:8px;"></div>
+
+<script>
+    // Create the map centered roughly on Chicago
+    const map = L.map('map').setView([41.88, -87.63], 11);
+
+    // Base layer from OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // CTA line color mapping
+    const lineColors = {
+        "Red":    "#C60C30",
+        "Blue":   "#00A1DE",
+        "Green":  "#009B3A",
+        "Brown":  "#62361B",
+        "Orange": "#F9461C",
+        "Purple": "#522398",
+        "Pink":   "#E27EA6",
+        "Yellow": "#F9E300"
+    };
+
+    // One marker per station
+    {% for st in stations %}
+        {% if st.latitude and st.longitude %}
+            (function() {
+                const lat = {{ st.latitude }};
+                const lng = {{ st.longitude }};
+                const colors = {{ st.colors|tojson }};
+                const mainColorName = {{ st.primary_color|tojson }};
+                const stopsText = {{ st.stops_text|tojson }};
+
+                const markerColor =
+                    (mainColorName && lineColors[mainColorName])
+                    ? lineColors[mainColorName]
+                    : "#000000";
+
+                let linesText = "Lines: ";
+                if (colors.length > 0) {
+                    linesText += colors.join(", ");
+                } else {
+                    linesText += "Unknown";
+                }
+
+                const popupHtml = `
+                    <strong>{{ st.station_name|e }}</strong><br>
+                    ${linesText}<br>
+                    ${stopsText ? "<small>Stops: " + stopsText + "</small><br>" : ""}
+                    <a href="{{ url_for('station_detail', station_id=st.station_id) }}">
+                        View station page
+                    </a>
+                `;
+
+                L.circleMarker([lat, lng], {
+                    radius: 7,
+                    color: markerColor,
+                    fillColor: markerColor,
+                    fillOpacity: 0.9
+                })
+                .bindPopup(popupHtml)
+                .addTo(map);
+            })();
+        {% endif %}
+    {% endfor %}
+</script>
+
+{% endblock %}
