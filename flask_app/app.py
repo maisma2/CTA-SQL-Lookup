@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from db import get_connection
+import math
 
 app = Flask(__name__)
 
@@ -155,7 +156,6 @@ def station_detail(station_id: int):
     bbox_min_lat = bbox_min_lng = bbox_max_lat = bbox_max_lng = None
 
     if stops:
-        # cast from Decimal to float so we can do arithmetic
         station_lat = float(stops[0]["latitude"])
         station_lng = float(stops[0]["longitude"])
 
@@ -165,7 +165,7 @@ def station_detail(station_id: int):
         bbox_max_lng = station_lng + delta
         bbox_max_lat = station_lat + delta
 
-    # 3) Lines serving this station
+    # 3) Lines serving this station (from StationLine using color)
     cursor.execute("""
         SELECT DISTINCT
             sl.color AS name
@@ -177,7 +177,7 @@ def station_detail(station_id: int):
     """, (station_id,))
     lines = cursor.fetchall()
 
-    # 4) Recent ridership
+    # 4) Recent ridership (last 30 rows) from StationRidership
     cursor.execute("""
         SELECT TOP 30
             [date]  AS date,
@@ -187,6 +187,53 @@ def station_detail(station_id: int):
         ORDER BY [date] DESC;
     """, (station_id,))
     ridership = cursor.fetchall()
+
+    # 5) Total ridership (all time) for this station
+    cursor.execute("""
+        SELECT
+            SUM(CAST(rides AS bigint)) AS total_rides
+        FROM dbo.StationRidership
+        WHERE station_id = %s;
+    """, (station_id,))
+    total_row = cursor.fetchone()
+    total_rides = total_row["total_rides"] or 0
+
+    # 6) Compute importance score: log10(total_rides + 1) + num_lines
+    num_lines = len(lines)
+    importance_score = math.log10(total_rides + 1) + num_lines
+
+    # 7) Station's contribution to each line it serves
+    line_contributions = []
+    if lines and total_rides > 0:
+        colors = [l["name"] for l in lines if l["name"] is not None]
+        if colors:
+            placeholders = ",".join(["%s"] * len(colors))
+            cursor.execute(f"""
+                SELECT
+                    sl.color,
+                    SUM(CAST(r.rides AS bigint)) AS total_rides
+                FROM dbo.StationRidership r
+                JOIN dbo.Station s
+                    ON r.station_id = s.station_id
+                JOIN dbo.StationLine sl
+                    ON sl.stop_id = s.stop_id
+                WHERE sl.color IN ({placeholders})
+                GROUP BY sl.color;
+            """, tuple(colors))
+            rows = cursor.fetchall()
+            totals_by_color = {row["color"]: row["total_rides"] for row in rows}
+
+            for c in colors:
+                line_total = totals_by_color.get(c, 0) or 0
+                if line_total > 0:
+                    percent = (total_rides / float(line_total)) * 100.0
+                else:
+                    percent = None
+                line_contributions.append({
+                    "color": c,
+                    "line_total_rides": line_total,
+                    "percent": percent,
+                })
 
     cursor.close()
     conn.close()
@@ -203,7 +250,12 @@ def station_detail(station_id: int):
         bbox_min_lng=bbox_min_lng,
         bbox_max_lat=bbox_max_lat,
         bbox_max_lng=bbox_max_lng,
+        importance_score=importance_score,
+        total_rides=total_rides,
+        num_lines=num_lines,
+        line_contributions=line_contributions,
     )
+
 
 
 @app.route("/search")
